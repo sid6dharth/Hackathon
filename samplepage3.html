@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore Your Neighbourhood!</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="C:\Users\rohan\UrbanScope\style2.css">
+  <link rel="stylesheet" href="C:\Users\rohan\UrbanScope\style.css">
+</head>
+<body>
+
+  <h1 id = "title">The UrbanScope</h1>
+
+  <div id="map"></div>
+  <div>
+    <label for="radius" id  = "text1">Radius (in meters): </label>
+    <input type="number" id="radius" placeholder="Enter radius" />
+  </div>
+
+  <div id="checkboxContainer">
+    <label><input type="checkbox" value="hospital" checked> Hospitals</label>
+    <label><input type="checkbox" value="school" checked> Schools</label>
+    <label><input type="checkbox" value="restaurant" checked> Restaurants</label>
+    <label><input type="checkbox" value="pharmacy" checked> Pharmacies</label>
+    <label><input type="checkbox" value="bank" checked> Banks</label>
+  </div>
+
+  <button id="getAmenitiesBtn">Get Amenities</button>
+  <div id="results"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const map = L.map('map').setView([13.0843, 80.2705], 10);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      let selectedLat = 13.0843;
+      let selectedLon = 80.2705;
+      let locationMarker = null;
+      const amenityMarkers = [];
+
+      const amenityColors = {
+        hospital: "red",
+        school: "blue",
+        restaurant: "green",
+        pharmacy: "purple",
+        bank: "orange"
+      };
+
+      map.on('click', function (e) {
+        selectedLat = e.latlng.lat;
+        selectedLon = e.latlng.lng;
+
+        if (locationMarker) map.removeLayer(locationMarker);
+
+        locationMarker = L.marker([selectedLat, selectedLon]).addTo(map)
+          .bindPopup('Selected Location').openPopup();
+      });
+
+      async function getAmenities() {
+        const radius = parseInt(document.getElementById('radius').value, 10);
+        if (isNaN(radius) || radius <= 0) {
+          alert("Please enter a valid positive number for the radius!");
+          return;
+        }
+
+        const selectedAmenities = Array.from(document.querySelectorAll('#checkboxContainer input:checked'))
+          .map(checkbox => checkbox.value);
+
+        if (selectedAmenities.length === 0) {
+          alert("Please select at least one amenity type!");
+          return;
+        }
+
+        const overpassQuery = `
+          [out:json];
+          (
+            ${selectedAmenities.map(amenity => 
+              `node["amenity"="${amenity}"](around:${radius},${selectedLat},${selectedLon});`
+            ).join("\n")}
+          );
+          out center;
+        `;
+
+        const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+
+        amenityMarkers.forEach(marker => map.removeLayer(marker));
+        amenityMarkers.length = 0;
+
+        try {
+          document.getElementById('results').innerHTML = `<h3>Loading amenities data...</h3>`;
+          const response = await fetch(overpassUrl);
+          const data = await response.json();
+
+          const amenityCounts = {};
+          selectedAmenities.forEach(amenity => {
+            amenityCounts[amenity] = 0;
+          });
+
+          data.elements.forEach(amenity => {
+            const type = amenity.tags.amenity;
+            if (selectedAmenities.includes(type)) {
+              amenityCounts[type] += 1;
+
+              if (amenity.lat && amenity.lon) {
+                const marker = L.circleMarker([amenity.lat, amenity.lon], {
+                  radius: 6,
+                  color: amenityColors[type] || "black",
+                  fillColor: amenityColors[type] || "black",
+                  fillOpacity: 0.8
+                }).addTo(map)
+                  .bindPopup(amenity.tags.name || `${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                amenityMarkers.push(marker);
+              }
+            }
+          });
+
+          const resultsHTML = selectedAmenities.map(type => 
+            `<p>${type.charAt(0).toUpperCase() + type.slice(1)}s: ${amenityCounts[type]}</p>`
+          ).join("");
+          document.getElementById('results').innerHTML = `<h3>Results:</h3>${resultsHTML}`;
+        } catch (error) {
+          console.error("Error fetching data from Overpass API:", error);
+          let errorMessage = "Error fetching amenities data.";
+          if (error.message.includes("429")) {
+            errorMessage = "Rate limit exceeded. Please try again later.";
+          }
+          document.getElementById('results').innerHTML = `<h3>${errorMessage}</h3>`;
+        }
+      }
+
+      document.getElementById('getAmenitiesBtn').addEventListener('click', getAmenities);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+#title{
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+    text-decoration: underline;
+}
+
+
+#text1{
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#checkboxContainer > label{
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#radius{
+    padding:10px;
+    font-family:'Courier New', Courier, monospace ;
+}
+
+#getAmenitiesBtn{
+    padding: 10px;
+    font-family: 'Courier New', Courier, monospace;
+    border-radius: 5px;
+    border:none;
+    background-color: burlywood;
+    color:azure;
+}
+
+h3 {
+    text-align: center; /* Moves it to the center */
+    margin-top: 10px;
+    font-size: 20px;
+    color: blue;
+  }
