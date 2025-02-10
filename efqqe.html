@@ -141,6 +141,14 @@
         </table>
       </div>
 
+      <div id="aqi-info" style="display: none;">
+        <h3>Air Quality Information:</h3>
+        <table id="aqi-table">
+          <tr><th>Air Quality Index</th><td id="aqi-index">Loading...</td></tr>
+          <tr><th>Category</th><td id="aqi-category">Loading...</td></tr>
+        </table>
+      </div>
+
       <br>
 
       <!-- Radius and Checkbox Input -->
@@ -189,14 +197,12 @@
 
       // Updated icons for amenities
       const amenityIcons = {
-        hospital: L.icon({ iconUrl: "C:\\Users\\siddh\\Downloads\\hosp.png", iconSize: [30, 30] }),
-        school: L.icon({ iconUrl: "C:\\Users\\siddh\\Downloads\\school.png", iconSize: [30, 30] }),
-        restaurant: L.icon({ iconUrl: "C:\\Users\\siddh\\Downloads\\rest.png", iconSize: [30, 30] }),
-        pharmacy: L.icon({ iconUrl: "C:\\Users\\siddh\\Downloads\\pharm.png", iconSize: [30, 30] }),
-        bank: L.icon({ iconUrl: "C:\\Users\\siddh\\Downloads\\bank.png", iconSize: [30, 30] })
+        hospital: L.icon({ iconUrl: "https://png.pngtree.com/png-clipart/20200701/original/pngtree-hospital-icon-design-illustration-png-image_5345011.jpg", iconSize: [30, 30] }),
+        school: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/8074/8074788.png", iconSize: [30, 30] }),
+        restaurant: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/9638/9638472.png", iconSize: [30, 30] }),
+        pharmacy: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/9069/9069025.png", iconSize: [30, 30] }),
+        bank: L.icon({ iconUrl: "https://png.pngtree.com/element_our/png/20181114/bank-icon-png_239804.jpg", iconSize: [30, 30] })
       };
-
-      // Function to calculate the distance between two lat-lon points
       function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371e3; // Earth's radius in meters
         const φ1 = lat1 * Math.PI / 180;
@@ -212,52 +218,8 @@
 
         return R * c; // Distance in meters
       }
-
-      // API Key for weather (Provided by You)
-      const apiKey = "af4e7d694bcc56993ffeea688261d1a1";
-
-      // Function to fetch weather data
-      async function getWeather() {
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${selectedLat}&lon=${selectedLon}&appid=${apiKey}&units=metric`;
-
-        try {
-          const response = await fetch(weatherUrl);
-          if (!response.ok) {
-            throw new Error(`HTTP Error: ${response.status}`);
-          }
-
-          const data = await response.json();
-
-          // Display weather info in the table
-          document.getElementById('weather-description').innerText = data.weather[0].description;
-          document.getElementById('weather-temp').innerText = `${data.main.temp}°C`;
-          document.getElementById('weather-humidity').innerText = `${data.main.humidity}%`;
-          document.getElementById('weather-wind').innerText = `${data.wind.speed} m/s`;
-
-          // Show weather section after location is selected
-          document.getElementById('weather-info').style.display = 'block';
-
-        } catch (error) {
-          console.error("Error fetching weather data:", error);
-          document.getElementById('weather-info').innerHTML = `<h3>Error: ${error.message}</h3>`;
-        }
-      }
-
-      // Click event to place marker on the map and fetch weather data
-      map.on('click', async function (e) {
-        selectedLat = e.latlng.lat;
-        selectedLon = e.latlng.lng;
-
-        if (locationMarker) map.removeLayer(locationMarker);
-
-        locationMarker = L.marker([selectedLat, selectedLon]).addTo(map);
-
-        // Fetch weather data
-        await getWeather();
-      });
-
-      // Function to fetch amenities data
-      async function getAmenities() {
+            // Function to fetch amenities data
+            async function getAmenities() {
         const radius = parseInt(document.getElementById('radius').value, 10);
         if (isNaN(radius) || radius <= 0) {
           document.getElementById('results').innerHTML = `<div><h3>Please enter a valid positive number for the radius!</h3></div>`;
@@ -365,7 +327,93 @@
         await getAmenities();
       });
 
-      // Theme Toggle Functionality
+
+      // AQI API Key (Please replace with your own AQICN API key)
+      const aqiApiKey = "4c6b5b494ae6d4d30233d2628aab642e6e56776e"; // Replace this with your AQICN API Key
+
+      // Function to fetch AQI data
+      async function getAQI() {
+        const aqiUrl = `https://api.waqi.info/feed/geo:${selectedLat};${selectedLon}/?token=${aqiApiKey}`;
+
+        try {
+          const response = await fetch(aqiUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          if (data.status === "ok") {
+            // Display AQI info in the table
+            const aqiIndex = data.data.aqi;
+            const aqiCategory = getAQICategory(aqiIndex);
+
+            document.getElementById('aqi-index').innerText = aqiIndex;
+            document.getElementById('aqi-category').innerText = aqiCategory;
+
+            // Show AQI section
+            document.getElementById('aqi-info').style.display = 'block';
+          } else {
+            document.getElementById('aqi-info').innerHTML = `<h3>Error fetching AQI data</h3>`;
+          }
+        } catch (error) {
+          console.error("Error fetching AQI data:", error);
+          document.getElementById('aqi-info').innerHTML = `<h3>Error: ${error.message}</h3>`;
+        }
+      }
+
+      // Function to get AQI category based on the AQI index
+      function getAQICategory(aqi) {
+        if (aqi <= 50) return "Good";
+        if (aqi <= 100) return "Moderate";
+        if (aqi <= 150) return "Unhealthy for Sensitive Groups";
+        if (aqi <= 200) return "Unhealthy";
+        if (aqi <= 300) return "Very Unhealthy";
+        return "Hazardous";
+      }
+
+      // Click event to place marker on the map, fetch weather, and AQI data
+      map.on('click', async function (e) {
+        selectedLat = e.latlng.lat;
+        selectedLon = e.latlng.lng;
+
+        if (locationMarker) map.removeLayer(locationMarker);
+
+        locationMarker = L.marker([selectedLat, selectedLon]).addTo(map);
+
+        // Fetch weather data
+        await getWeather();
+
+        // Fetch AQI data
+        await getAQI();
+      });
+
+      // Fetch Weather data (from existing code)
+      async function getWeather() {
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${selectedLat}&lon=${selectedLon}&appid=af4e7d694bcc56993ffeea688261d1a1&units=metric`;
+
+        try {
+          const response = await fetch(weatherUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          document.getElementById('weather-description').innerText = data.weather[0].description;
+          document.getElementById('weather-temp').innerText = `${data.main.temp}°C`;
+          document.getElementById('weather-humidity').innerText = `${data.main.humidity}%`;
+          document.getElementById('weather-wind').innerText = `${data.wind.speed} m/s`;
+
+          document.getElementById('weather-info').style.display = 'block';
+        } catch (error) {
+          console.error("Error fetching weather data:", error);
+          document.getElementById('weather-info').innerHTML = `<h3>Error: ${error.message}</h3>`;
+        }
+      }
+
+      // Other existing code for fetching amenities remains unchanged...
+
+      // Theme Toggle functionality
       const themeToggle = document.getElementById('themeToggle');
       themeToggle.addEventListener('click', () => {
         const body = document.body;
@@ -379,8 +427,8 @@
           themeToggle.innerText = 'Light Mode';
         }
       });
-
     });
+
   </script>
 </body>
 </html>
