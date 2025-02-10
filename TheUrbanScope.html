@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore Your Neighbourhood and Weather</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="icon" href="C:\Users\rohan\UrbanScope\8f05747a-35a4-43f7-b3ee-e2ec1a2ce83f.jpg"/>
+  <style>
+    /* Dark theme styling */
+    body.dark-mode {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #2c3e50;
+      color: #ecf0f1;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body.light-mode {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      color: #2c3e50;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    #title {
+      text-align: center;
+      font-size: 48px;
+      margin: 20px;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+      font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif
+    }
+
+    .main-container {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px;
+      height: 100vh; 
+    }
+
+    #map {
+      height: 100%; 
+      width: 50%; 
+    }
+
+    #results-container {
+      width: 50%; 
+      padding: 20px;
+      background: rgba(52, 73, 94, 0.9);
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      overflow-y: auto;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light-mode #results-container {
+      background: rgba(236, 240, 241, 0.9);
+      color: #2c3e50;
+    }
+
+    #results-container table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #results-container table, th, td {
+      border: 1px solid #ecf0f1;
+    }
+
+    body.light-mode #results-container table, body.light-mode #results-container th, body.light-mode #results-container td {
+      border: 1px solid #2c3e50;
+    }
+
+    #results-container th, td {
+      padding: 10px;
+      text-align: left;
+    }
+
+    #logo {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+    }
+
+    .checkbox-container {
+      margin-top: 20px;
+    }
+
+    #radius {
+      padding: 8px;
+      font-size: 16px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background-color: #ecf0f1;
+      color: #2c3e50;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 15px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+      transform: scale(1.05);
+    }
+
+    #themeToggle {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 10px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    #themeToggle:hover {
+      background-color: #2980b9;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="dark-mode">
+
+  <h1 id="title">The UrbanScope</h1>
+
+  <!-- Theme Toggle Button -->
+  <button id="themeToggle">Light Mode</button>
+
+  <!-- Logo in the top right corner -->
+  <img src="C:\Users\rohan\UrbanScope\8f05747a-35a4-43f7-b3ee-e2ec1a2ce83f.jpg" alt="Logo" id="logo">
+
+  <div class="main-container">
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Results Container (Weather and Amenities) -->
+    <div id="results-container">
+      <!-- Weather Info Section (Initially hidden) -->
+      <div id="weather-info" style="display: none;">
+        <h3>Weather Information:</h3>
+        <table id="weather-table">
+          <tr><th>Description</th><td id="weather-description">Loading...</td></tr>
+          <tr><th>Temperature</th><td id="weather-temp">Loading...</td></tr>
+          <tr><th>Humidity</th><td id="weather-humidity">Loading...</td></tr>
+          <tr><th>Wind Speed</th><td id="weather-wind">Loading...</td></tr>
+        </table>
+      </div>
+
+      <div id="aqi-info" style="display: none;">
+        <h3>Air Quality Information:</h3>
+        <table id="aqi-table">
+          <tr><th>Air Quality Index</th><td id="aqi-index">Loading...</td></tr>
+          <tr><th>Category</th><td id="aqi-category">Loading...</td></tr>
+        </table>
+      </div>
+
+      <br>
+
+      <!-- Radius and Checkbox Input -->
+      <div style="text-align: center;">
+        <label for="radius" id="text1" style="font-size: 18px;">Radius (in meters): </label>
+        <input type="number" id="radius" placeholder="Enter radius" />
+      </div>
+      <br>
+      <div id="checkboxContainer" style="text-align: center;">
+        <label><input type="checkbox" value="hospital" checked> Hospitals</label>
+        <label><input type="checkbox" value="school" checked> Schools</label>
+        <label><input type="checkbox" value="restaurant" checked> Restaurants</label>
+        <label><input type="checkbox" value="pharmacy" checked> Pharmacies</label>
+        <label><input type="checkbox" value="bank" checked> Banks</label>
+      </div>
+
+      <div style="text-align: center;">
+        <button id="getAmenitiesBtn">Get Amenities</button>
+      </div>
+
+      <!-- Results Section for Amenities -->
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const map = L.map('map').setView([13.0843, 80.2705], 10);
+
+      // Ensure the map container has height
+      const mapContainer = document.getElementById("map");
+      if (mapContainer) {
+        mapContainer.style.height = "100%"; // Full height
+      }
+
+      // Add OpenStreetMap tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      let selectedLat = 13.0843;
+      let selectedLon = 80.2705;
+      let locationMarker = null;
+      const amenityMarkers = [];
+
+      // Updated icons for amenities
+      const amenityIcons = {
+        hospital: L.icon({ iconUrl: "https://png.pngtree.com/png-clipart/20200701/original/pngtree-hospital-icon-design-illustration-png-image_5345011.jpg", iconSize: [30, 30] }),
+        school: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/8074/8074788.png", iconSize: [30, 30] }),
+        restaurant: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/9638/9638472.png", iconSize: [30, 30] }),
+        pharmacy: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/9069/9069025.png", iconSize: [30, 30] }),
+        bank: L.icon({ iconUrl: "https://png.pngtree.com/element_our/png/20181114/bank-icon-png_239804.jpg", iconSize: [30, 30] })
+      };
+      function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6378; // Earth's radius in kilometers
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c; // Distance in kilometers
+      }
+            // Function to fetch amenities data
+            async function getAmenities() {
+        const radius = parseInt(document.getElementById('radius').value, 10);
+        if (isNaN(radius) || radius <= 0) {
+          document.getElementById('results').innerHTML = `<div><h3>Please enter a valid positive number for the radius!</h3></div>`;
+          return;
+        }
+
+        const selectedAmenities = Array.from(document.querySelectorAll('#checkboxContainer input:checked'))
+          .map(checkbox => checkbox.value);
+
+        if (selectedAmenities.length === 0) {
+          document.getElementById('results').innerHTML = `<div><h3>Please select at least one amenity type!</h3></div>`;
+          return;
+        }
+
+        const overpassQuery = `
+          [out:json];
+          (
+            ${selectedAmenities.map(amenity => 
+              `node["amenity"="${amenity}"](around:${radius},${selectedLat},${selectedLon});`
+            ).join("\n")}
+          );
+          out center;
+        `;
+
+        const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+
+        amenityMarkers.forEach(marker => map.removeLayer(marker));
+        amenityMarkers.length = 0;
+
+        try {
+          const response = await fetch(overpassUrl);
+          const data = await response.json();
+
+          const nearestAmenities = {};
+          const amenityCounts = {};
+
+          selectedAmenities.forEach(amenity => {
+            nearestAmenities[amenity] = { distance: Infinity, marker: null, name: '' };
+            amenityCounts[amenity] = 0;
+          });
+
+          data.elements.forEach(amenity => {
+            const type = amenity.tags.amenity;
+            if (selectedAmenities.includes(type)) {
+              if (amenity.lat && amenity.lon) {
+                const distance = calculateDistance(selectedLat, selectedLon, amenity.lat, amenity.lon);
+                amenityCounts[type]++;
+
+                if (distance < nearestAmenities[type].distance) {
+                  nearestAmenities[type] = { 
+                    distance, 
+                    marker: L.marker([amenity.lat, amenity.lon], { icon: amenityIcons[type] }).addTo(map)
+                      .bindPopup(`${amenity.tags.name || type.charAt(0).toUpperCase() + type.slice(1)} (Nearest)`), 
+                    name: amenity.tags.name || type.charAt(0).toUpperCase() + type.slice(1) 
+                  };
+                }
+              }
+            }
+          });
+
+          // Display the nearest amenities and their distances in table format
+          let resultsHTML = '<h3>Nearest Amenities:</h3><table>';
+          selectedAmenities.forEach(type => {
+            if (nearestAmenities[type].marker) {
+              resultsHTML += `
+                <tr>
+                  <th>
+                    <img src="${amenityIcons[type].options.iconUrl}" alt="${type}" width="30" height="30" style="margin-right: 10px;">
+                    ${type.charAt(0).toUpperCase() + type.slice(1)}
+                  </th>
+                  <td>${nearestAmenities[type].name}</td>
+                  <td>${nearestAmenities[type].distance.toFixed(2)} kilometers</td>
+                </tr>
+              `;
+            }
+          });
+          resultsHTML += '</table>';
+
+          // Display the number of each amenity found
+          let amenityCountsHTML = '<h3>Amenity Counts:</h3><table>';
+          selectedAmenities.forEach(type => {
+            amenityCountsHTML += `
+              <tr>
+                <th>
+                  <img src="${amenityIcons[type].options.iconUrl}" alt="${type}" width="30" height="30" style="margin-right: 10px;">
+                  ${type.charAt(0).toUpperCase() + type.slice(1)}
+                </th>
+                <td>${amenityCounts[type]}</td>
+              </tr>
+            `;
+          });
+          amenityCountsHTML += '</table>';
+
+          document.getElementById('results').innerHTML = resultsHTML + amenityCountsHTML;
+
+        } catch (error) {
+          console.error("Error fetching amenities data:", error);
+          document.getElementById('results').innerHTML = `<div><h3>Error: ${error.message}</h3></div>`;
+        }
+      }
+
+      // Button event listener
+      document.getElementById('getAmenitiesBtn').addEventListener('click', async function () {
+        document.getElementById('results').innerHTML = `<h2>Fetching data...</h2>`;
+        await getAmenities();
+      });
+
+
+      // AQI API Key (Please replace with your own AQICN API key)
+      const aqiApiKey = "4c6b5b494ae6d4d30233d2628aab642e6e56776e"; // Replace this with your AQICN API Key
+
+      // Function to fetch AQI data
+      async function getAQI() {
+        const aqiUrl = `https://api.waqi.info/feed/geo:${selectedLat};${selectedLon}/?token=${aqiApiKey}`;
+
+        try {
+          const response = await fetch(aqiUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          if (data.status === "ok") {
+            // Display AQI info in the table
+            const aqiIndex = data.data.aqi;
+            const aqiCategory = getAQICategory(aqiIndex);
+
+            document.getElementById('aqi-index').innerText = aqiIndex;
+            document.getElementById('aqi-category').innerText = aqiCategory;
+
+            // Show AQI section
+            document.getElementById('aqi-info').style.display = 'block';
+          } else {
+            document.getElementById('aqi-info').innerHTML = `<h3>Error fetching AQI data</h3>`;
+          }
+        } catch (error) {
+          console.error("Error fetching AQI data:", error);
+          document.getElementById('aqi-info').innerHTML = `<h3>Error: ${error.message}</h3>`;
+        }
+      }
+
+      // Function to get AQI category based on the AQI index
+      function getAQICategory(aqi) {
+        if (aqi <= 50) return "Good";
+        if (aqi <= 100) return "Moderate";
+        if (aqi <= 150) return "Unhealthy for Sensitive Groups";
+        if (aqi <= 200) return "Unhealthy";
+        if (aqi <= 300) return "Very Unhealthy";
+        return "Hazardous";
+      }
+
+      // Click event to place marker on the map, fetch weather, and AQI data
+      map.on('click', async function (e) {
+        selectedLat = e.latlng.lat;
+        selectedLon = e.latlng.lng;
+
+        if (locationMarker) map.removeLayer(locationMarker);
+
+        locationMarker = L.marker([selectedLat, selectedLon]).addTo(map);
+
+        // Fetch weather data
+        await getWeather();
+
+        // Fetch AQI data
+        await getAQI();
+      });
+
+      // Fetch Weather data (from existing code)
+      async function getWeather() {
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${selectedLat}&lon=${selectedLon}&appid=af4e7d694bcc56993ffeea688261d1a1&units=metric`;
+
+        try {
+          const response = await fetch(weatherUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          document.getElementById('weather-description').innerText = data.weather[0].description;
+          document.getElementById('weather-temp').innerText = `${data.main.temp}°C`;
+          document.getElementById('weather-humidity').innerText = `${data.main.humidity}%`;
+          document.getElementById('weather-wind').innerText = `${data.wind.speed} m/s`;
+
+          document.getElementById('weather-info').style.display = 'block';
+        } catch (error) {
+          console.error("Error fetching weather data:", error);
+          document.getElementById('weather-info').innerHTML = `<h3>Error: ${error.message}</h3>`;
+        }
+      }
+
+      // Other existing code for fetching amenities remains unchanged...
+
+      // Theme Toggle functionality
+      const themeToggle = document.getElementById('themeToggle');
+      themeToggle.addEventListener('click', () => {
+        const body = document.body;
+        if (body.classList.contains('dark-mode')) {
+          body.classList.remove('dark-mode');
+          body.classList.add('light-mode');
+          themeToggle.innerText = 'Dark Mode';
+        } else {
+          body.classList.remove('light-mode');
+          body.classList.add('dark-mode');
+          themeToggle.innerText = 'Light Mode';
+        }
+      });
+    });
+
+  </script>
+</body>
+</html>
