@@ -142,19 +142,16 @@
 
   <h1 id="title">The UrbanScope</h1>
 
-  <!-- Theme Toggle Button -->
   <button id="themeToggle">Light Mode</button>
 
-  <!-- Logo in the top right corner -->
   <img src="C:\Users\rohan\UrbanScope\8f05747a-35a4-43f7-b3ee-e2ec1a2ce83f.jpg" alt="Logo" id="logo">
 
   <div class="main-container">
-    <!-- Map Container -->
+    <!-- Map thing -->
     <div id="map"></div>
 
-    <!-- Results Container (Weather and Amenities) -->
     <div id="results-container">
-      <!-- Weather Info Section (Initially hidden) -->
+      
       <div id="weather-info" style="display: none;">
         <h3>Weather Information:</h3>
         <table id="weather-table">
@@ -175,7 +172,7 @@
 
       <br>
 
-      <!-- Radius and Checkbox Input -->
+      <!-- radius shi -->
       <div style="text-align: center;">
         <label for="radius" id="text1" style="font-size: 18px;">Radius (in meters): </label>
         <input type="number" id="radius" placeholder="Enter radius" />
@@ -193,7 +190,7 @@
         <button id="getAmenitiesBtn">Get Amenities</button>
       </div>
 
-      <!-- Results Section for Amenities -->
+      <!-- results -->
       <div id="results"></div>
     </div>
   </div>
@@ -203,13 +200,12 @@
     document.addEventListener('DOMContentLoaded', function () {
       const map = L.map('map').setView([13.0843, 80.2705], 10);
 
-      // Ensure the map container has height
       const mapContainer = document.getElementById("map");
       if (mapContainer) {
-        mapContainer.style.height = "100%"; // Full height
+        mapContainer.style.height = "100%"; 
       }
 
-      // Add OpenStreetMap tile layer
+      //openstreet map
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map);
@@ -219,7 +215,7 @@
       let locationMarker = null;
       const amenityMarkers = [];
 
-      // Updated icons for amenities
+      // icons for the amenties
       const amenityIcons = {
         hospital: L.icon({ iconUrl: "https://png.pngtree.com/png-clipart/20200701/original/pngtree-hospital-icon-design-illustration-png-image_5345011.jpg", iconSize: [30, 30] }),
         school: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/8074/8074788.png", iconSize: [30, 30] }),
@@ -228,7 +224,7 @@
         bank: L.icon({ iconUrl: "https://png.pngtree.com/element_our/png/20181114/bank-icon-png_239804.jpg", iconSize: [30, 30] })
       };
       function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6378; // Earth's radius in kilometers
+        const R = 6378; 
         const φ1 = lat1 * Math.PI / 180;
         const φ2 = lat2 * Math.PI / 180;
         const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -352,8 +348,8 @@
       });
 
 
-      // AQI API Key (Please replace with your own AQICN API key)
-      const aqiApiKey = "4c6b5b494ae6d4d30233d2628aab642e6e56776e"; // Replace this with your AQICN API Key
+      // AQI API Key 
+      const aqiApiKey = "4c6b5b494ae6d4d30233d2628aab642e6e56776e"; 
 
       // Function to fetch AQI data
       async function getAQI() {
@@ -395,7 +391,7 @@
         return "Hazardous";
       }
 
-      // Click event to place marker on the map, fetch weather, and AQI data
+      // place marker on the map, fetch weather, and AQI data
       map.on('click', async function (e) {
         selectedLat = e.latlng.lat;
         selectedLon = e.latlng.lng;
@@ -411,7 +407,7 @@
         await getAQI();
       });
 
-      // Fetch Weather data (from existing code)
+      // Fetch Weather data from existing code
       async function getWeather() {
         const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${selectedLat}&lon=${selectedLon}&appid=af4e7d694bcc56993ffeea688261d1a1&units=metric`;
 
@@ -435,9 +431,7 @@
         }
       }
 
-      // Other existing code for fetching amenities remains unchanged...
-
-      // Theme Toggle functionality
+      // Theme Toggle 
       const themeToggle = document.getElementById('themeToggle');
       themeToggle.addEventListener('click', () => {
         const body = document.body;
